@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="560dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingTop="40dp"
+        android:paddingBottom="40dp">
+
+        <ImageView
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:layout_gravity="center_horizontal"
+            android:src="@mipmap/ic_launcher" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="12dp"
+            android:text="@string/add_playlist"
+            android:textColor="@color/text"
+            android:textSize="28sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnTypeXtream"
+                style="@style/Btn"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="@string/xtream_codes" />
+
+            <Button
+                android:id="@+id/btnTypeM3u"
+                style="@style/Btn"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="@string/m3u_url" />
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/etName"
+            style="@style/Input"
+            android:hint="@string/playlist_name"
+            android:inputType="text" />
+
+        <LinearLayout
+            android:id="@+id/groupXtream"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <EditText
+                android:id="@+id/etServer"
+                style="@style/Input"
+                android:hint="@string/server_url"
+                android:inputType="textUri" />
+
+            <EditText
+                android:id="@+id/etUser"
+                style="@style/Input"
+                android:hint="@string/username"
+                android:inputType="text" />
+
+            <EditText
+                android:id="@+id/etPass"
+                style="@style/Input"
+                android:hint="@string/password"
+                android:inputType="textPassword" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/groupM3u"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <EditText
+                android:id="@+id/etM3u"
+                style="@style/Input"
+                android:hint="@string/m3u_hint"
+                android:inputType="textUri" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnSave"
+            style="@style/Btn"
+            android:layout_width="match_parent"
+            android:layout_marginTop="24dp"
+            android:text="@string/save_login" />
+
+        <ProgressBar
+            android:id="@+id/progress"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="16dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvError"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:textColor="@color/danger"
+            android:textSize="16sp" />
+    </LinearLayout>
+</ScrollView>

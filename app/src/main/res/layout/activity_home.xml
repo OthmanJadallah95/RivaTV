@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:orientation="vertical"
+    android:paddingStart="48dp"
+    android:paddingTop="32dp"
+    android:paddingEnd="48dp"
+    android:paddingBottom="32dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@mipmap/ic_launcher" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_weight="1"
+            android:text="@string/app_name"
+            android:textColor="@color/text"
+            android:textSize="28sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvProfile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="24dp"
+            android:textColor="@color/accent"
+            android:textSize="18sp" />
+
+        <TextClock
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:format12Hour="hh:mm a"
+            android:format24Hour="HH:mm"
+            android:textColor="@color/text"
+            android:textSize="24sp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvAccount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textColor="@color/text_dim"
+        android:textSize="16sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="28dp"
+        android:layout_weight="2"
+        android:orientation="horizontal">
+
+        <LinearLayout android:id="@+id/tileLive" style="@style/Tile" android:layout_height="match_parent">
+            <ImageView style="@style/TileIcon" android:src="@drawable/ic_live" />
+            <TextView style="@style/TileLabel" android:text="@string/live_tv" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/tileMovies" style="@style/Tile" android:layout_height="match_parent">
+            <ImageView style="@style/TileIcon" android:src="@drawable/ic_movie" />
+            <TextView style="@style/TileLabel" android:text="@string/movies" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/tileSeries" style="@style/Tile" android:layout_height="match_parent">
+            <ImageView style="@style/TileIcon" android:src="@drawable/ic_series" />
+            <TextView style="@style/TileLabel" android:text="@string/series" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="20dp"
+        android:layout_weight="1"
+        android:orientation="horizontal">
+
+        <LinearLayout android:id="@+id/tileSwitch" style="@style/Tile" android:layout_height="match_parent">
+            <ImageView style="@style/TileIcon" android:layout_width="40dp" android:layout_height="40dp" android:src="@drawable/ic_swap" />
+            <TextView style="@style/TileLabel" android:textSize="18sp" android:text="@string/switch_playlist" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/tileReload" style="@style/Tile" android:layout_height="match_parent">
+            <ImageView style="@style/TileIcon" android:layout_width="40dp" android:layout_height="40dp" android:src="@drawable/ic_refresh" />
+            <TextView style="@style/TileLabel" android:textSize="18sp" android:text="@string/reload" />
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/tileSettings" style="@style/Tile" android:layout_height="match_parent">
+            <ImageView style="@style/TileIcon" android:layout_width="40dp" android:layout_height="40dp" android:src="@drawable/ic_tune" />
+            <TextView style="@style/TileLabel" android:textSize="18sp" android:text="@string/settings" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

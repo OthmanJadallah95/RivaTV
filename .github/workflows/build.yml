@@ -1,0 +1,45 @@
+name: Build APK
+
+on:
+  push:
+    branches: [gguard-tv]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+      - name: Build APK
+        id: build
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease 2>&1 | tee build.log
+          exit ${PIPESTATUS[0]}
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: GGuardTV-apk
+          path: app/build/outputs/apk/release/*.apk
+      - name: Publish result to gguard-tv-apk branch
+        if: always()
+        shell: bash
+        run: |
+          mkdir out
+          cp build.log out/ 2>/dev/null || true
+          cp app/build/outputs/apk/release/*.apk out/GGuardTV.apk 2>/dev/null || true
+          echo "${{ steps.build.outcome }} ${{ github.sha }}" > out/STATUS
+          cd out
+          git init -q -b gguard-tv-apk
+          git add .
+          git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -qm "build ${{ github.sha }}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" gguard-tv-apk
