@@ -24,13 +24,13 @@
             android:textSize="24sp"
             android:textStyle="bold" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvCategories"
-            android:layout_width="match_parent"
+        <ListView
+            android:id="@+id/lvCategories"
+            style="@style/TvList"
             android:layout_height="0dp"
             android:layout_marginTop="12dp"
             android:layout_weight="1"
-            android:clipToPadding="false"
+            android:choiceMode="singleChoice"
             android:paddingBottom="24dp" />
     </LinearLayout>
 
@@ -57,12 +57,26 @@
             android:layout_marginTop="12dp"
             android:layout_weight="1">
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvItems"
+            <ListView
+                android:id="@+id/lvItems"
+                style="@style/TvList"
+                android:layout_height="match_parent"
+                android:paddingBottom="24dp" />
+
+            <GridView
+                android:id="@+id/gvItems"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:cacheColorHint="@android:color/transparent"
                 android:clipToPadding="false"
-                android:paddingBottom="24dp" />
+                android:drawSelectorOnTop="true"
+                android:horizontalSpacing="8dp"
+                android:listSelector="@drawable/bg_list_selector"
+                android:numColumns="5"
+                android:paddingBottom="24dp"
+                android:stretchMode="columnWidth"
+                android:verticalSpacing="8dp"
+                android:visibility="gone" />
 
             <ProgressBar
                 android:id="@+id/progress"

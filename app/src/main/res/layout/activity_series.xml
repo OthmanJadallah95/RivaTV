@@ -34,10 +34,18 @@
         android:layout_weight="1"
         android:orientation="vertical">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvSeasons"
+        <HorizontalScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/llSeasons"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="6dp" />
+        </HorizontalScrollView>
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -45,9 +53,9 @@
             android:layout_marginTop="12dp"
             android:layout_weight="1">
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvEpisodes"
-                android:layout_width="match_parent"
+            <ListView
+                android:id="@+id/lvEpisodes"
+                style="@style/TvList"
                 android:layout_height="match_parent" />
 
             <ProgressBar

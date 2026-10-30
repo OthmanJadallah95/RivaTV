@@ -1,6 +1,7 @@
 # G-Guard TV — IPTV player for Android TV / G-Guard screens
 
-An original IPTV player (Kotlin + Media3/ExoPlayer) built for TV remotes.
+An original IPTV player for TV remotes, written in plain Java on the Android framework
+(no external libraries). A ready-to-install APK is in `release/GGuardTV.apk`.
 
 ## Features
 - Login with **Xtream Codes API** (server + username + password) or an **M3U URL**
@@ -16,6 +17,10 @@ An original IPTV player (Kotlin + Media3/ExoPlayer) built for TV remotes.
 
 ## Build the APK
 
+### Option 0 — bare tools (`build.sh`)
+Needs JDK 17+ and a tools folder with `android.jar` (API 29+), `aapt2` and `dx.jar`:
+`TOOLS=/path/to/tools ./build.sh` → `build/GGuardTV.apk` (signed).
+
 ### Option A — Android Studio (on your PC)
 1. Install Android Studio (Ladybug or newer).
 2. File → Open → choose the `GGuardTV` folder. Wait for Gradle sync.
@@ -23,7 +28,6 @@ An original IPTV player (Kotlin + Media3/ExoPlayer) built for TV remotes.
 4. The APK is at `app/build/outputs/apk/debug/app-debug.apk`.
 
 Command line equivalent: `./gradlew assembleRelease`
-→ `app/build/outputs/apk/release/app-release.apk`
 
 ### Option B — GitHub (no Android Studio needed)
 1. Create a new GitHub repository and upload this folder.
@@ -48,9 +52,9 @@ Command line equivalent: `./gradlew assembleRelease`
 | Player | Menu / Info | Fit / Stretch / Zoom |
 
 ## Notes
-- The release build is signed with the debug key so it installs directly.
+- `build.sh` signs with a self-made key; Gradle release uses the debug key. Both install directly.
   Use your own keystore before distributing it.
-- Some channels use AC3/EAC3 audio; if a TV lacks that decoder you'll get video
-  without sound. Adding the Media3 FFmpeg extension fixes it (requires building it).
+- Playback uses the TV's built-in MediaPlayer, so supported codecs depend on the screen.
+  Live TV defaults to HLS (.m3u8) and falls back to .ts automatically (Settings tile to change).
 - Change the name, package (`com.gguard.tv`), colors (`res/values/colors.xml`)
   and icons (`res/mipmap-*`, `res/drawable-xhdpi/banner.png`) to brand it.
