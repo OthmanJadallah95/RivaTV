@@ -32,7 +32,14 @@ import java.util.concurrent.Callable;
 public class PlayerActivity extends BaseActivity implements SurfaceHolder.Callback, MediaController.MediaPlayerControl {
     private static final String EXTRA_INDEX = "index", EXTRA_LIVE = "live";
 
+    /** Opens the player chosen in Settings (VLC by default, which falls back to this one if it can't play). */
     public static void start(Context ctx, int index, boolean live) {
+        if ("vlc".equals(Store.player())) VlcPlayerActivity.start(ctx, index, live);
+        else startSystem(ctx, index, live);
+    }
+
+    /** The Android built-in player. */
+    public static void startSystem(Context ctx, int index, boolean live) {
         ctx.startActivity(new Intent(ctx, PlayerActivity.class).putExtra(EXTRA_INDEX, index).putExtra(EXTRA_LIVE, live));
     }
 

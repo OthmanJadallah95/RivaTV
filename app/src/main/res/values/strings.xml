@@ -45,4 +45,11 @@
     <string name="resize_fill">Stretch</string>
     <string name="resize_zoom">Zoom</string>
     <string name="fav_hint">Long-press OK (or Menu) to add to favorites</string>
+    <string name="player_title">Player</string>
+    <string name="player_vlc">VLC (recommended)</string>
+    <string name="player_system">Android built-in</string>
+    <string name="buffer_title">Buffer</string>
+    <string name="seconds_fmt">%1$d s</string>
+    <string name="seconds_dec_fmt">%1$s s</string>
+    <string name="vlc_fallback">VLC couldn\'t open this channel — switched to the built-in player</string>
 </resources>

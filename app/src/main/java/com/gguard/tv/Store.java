@@ -84,6 +84,16 @@ public final class Store {
         return added;
     }
 
+    /** "vlc" (default) or "system". */
+    public static String player() { return settings.getString("player", "vlc"); }
+
+    public static void setPlayer(String p) { settings.edit().putString("player", p).apply(); }
+
+    /** How much of the stream to buffer before/while playing, in ms (VLC player). */
+    public static int bufferMs() { return settings.getInt("buffer_ms", 5000); }
+
+    public static void setBufferMs(int ms) { settings.edit().putInt("buffer_ms", ms).apply(); }
+
     public static String liveExt() { return settings.getString("live_ext", "m3u8"); }
 
     public static void setLiveExt(String ext) { settings.edit().putString("live_ext", ext).apply(); }

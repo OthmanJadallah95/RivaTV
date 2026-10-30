@@ -5,3 +5,5 @@ local.properties
 .idea/
 *.iml
 build/
+app/src/main/jniLibs/
+app/src/main/java/org/videolan/

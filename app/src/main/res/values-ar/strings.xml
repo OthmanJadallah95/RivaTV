@@ -45,4 +45,11 @@
     <string name="resize_fill">تمديد</string>
     <string name="resize_zoom">تكبير</string>
     <string name="fav_hint">اضغط مطولاً على OK (أو زر القائمة) للإضافة إلى المفضلة</string>
+    <string name="player_title">المشغّل</string>
+    <string name="player_vlc">VLC (موصى به)</string>
+    <string name="player_system">مشغّل أندرويد المدمج</string>
+    <string name="buffer_title">التخزين المسبق</string>
+    <string name="seconds_fmt">%1$d ث</string>
+    <string name="seconds_dec_fmt">%1$s ث</string>
+    <string name="vlc_fallback">لم يستطع VLC فتح القناة — تم التحويل إلى المشغّل المدمج</string>
 </resources>

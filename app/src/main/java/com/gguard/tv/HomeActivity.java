@@ -75,6 +75,60 @@ public class HomeActivity extends BaseActivity {
     }
 
     private void showSettings() {
+        final String[] items = {
+                getString(R.string.player_title) + ":  " + getString("vlc".equals(Store.player()) ? R.string.player_vlc : R.string.player_system),
+                getString(R.string.buffer_title) + ":  " + getString(R.string.seconds_fmt, Store.bufferMs() / 1000),
+                getString(R.string.live_format_title) + ":  " + ("ts".equals(Store.liveExt()) ? "MPEG-TS" : "HLS"),
+        };
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.settings)
+                .setItems(items, new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int which) {
+                        if (which == 0) choosePlayer();
+                        else if (which == 1) chooseBuffer();
+                        else chooseLiveFormat();
+                    }
+                })
+                .show();
+    }
+
+    private void choosePlayer() {
+        String[] options = {getString(R.string.player_vlc), getString(R.string.player_system)};
+        int current = "vlc".equals(Store.player()) ? 0 : 1;
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.player_title)
+                .setSingleChoiceItems(options, current, new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int which) {
+                        Store.setPlayer(which == 0 ? "vlc" : "system");
+                        d.dismiss();
+                        showSettings();
+                    }
+                })
+                .show();
+    }
+
+    private void chooseBuffer() {
+        final int[] values = {1500, 3000, 5000, 8000, 12000};
+        String[] options = new String[values.length];
+        int current = 2;
+        for (int i = 0; i < values.length; i++) {
+            options[i] = getString(R.string.seconds_fmt, Math.round(values[i] / 1000f));
+            if (values[i] == Store.bufferMs()) current = i;
+        }
+        options[0] = getString(R.string.seconds_dec_fmt, "1.5");
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.buffer_title)
+                .setSingleChoiceItems(options, current, new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int which) {
+                        Store.setBufferMs(values[which]);
+                        d.dismiss();
+                        showSettings();
+                    }
+                })
+                .show();
+    }
+
+    private void chooseLiveFormat() {
         String[] options = {"HLS (.m3u8)", "MPEG-TS (.ts)"};
         int current = "ts".equals(Store.liveExt()) ? 1 : 0;
         new AlertDialog.Builder(this)
@@ -83,9 +137,9 @@ public class HomeActivity extends BaseActivity {
                     @Override public void onClick(DialogInterface d, int which) {
                         Store.setLiveExt(which == 1 ? "ts" : "m3u8");
                         d.dismiss();
+                        showSettings();
                     }
                 })
-                .setNegativeButton(R.string.cancel, null)
                 .show();
     }
 }
