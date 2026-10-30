@@ -28,7 +28,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: GGuardTV-apk
+          name: RivaTV-apk
           path: app/build/outputs/apk/release/*.apk
       - name: Publish result to gguard-tv-apk branch
         if: always()
@@ -36,7 +36,7 @@ jobs:
         run: |
           mkdir out
           cp build.log out/ 2>/dev/null || true
-          cp app/build/outputs/apk/release/*.apk out/GGuardTV.apk 2>/dev/null || true
+          cp app/build/outputs/apk/release/*.apk out/RivaTV.apk 2>/dev/null || true
           echo "${{ steps.build.outcome }} ${{ github.sha }}" > out/STATUS
           cd out
           git init -q -b gguard-tv-apk

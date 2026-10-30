@@ -1,7 +1,7 @@
-# G-Guard TV — IPTV player for Android TV / G-Guard screens
+# Riva TV — IPTV player for Android TV (built for G-Guard smart screens)
 
 An original IPTV player for TV remotes, written in plain Java on the Android framework
-(no external libraries). A ready-to-install APK is in `release/GGuardTV.apk`.
+(no external libraries). A ready-to-install APK is in `release/RivaTV.apk`.
 
 ## Features
 - Login with **Xtream Codes API** (server + username + password) or an **M3U URL**
@@ -19,7 +19,7 @@ An original IPTV player for TV remotes, written in plain Java on the Android fra
 
 ### Option 0 — bare tools (`build.sh`)
 Needs JDK 17+ and a tools folder with `android.jar` (API 29+), `aapt2` and `dx.jar`:
-`TOOLS=/path/to/tools ./build.sh` → `build/GGuardTV.apk` (signed).
+`TOOLS=/path/to/tools ./build.sh` → `build/RivaTV.apk` (signed).
 
 ### Option A — Android Studio (on your PC)
 1. Install Android Studio (Ladybug or newer).
@@ -32,7 +32,7 @@ Command line equivalent: `./gradlew assembleRelease`
 ### Option B — GitHub (no Android Studio needed)
 1. Create a new GitHub repository and upload this folder.
 2. Open the **Actions** tab → "Build APK" runs automatically.
-3. When it finishes, download the **GGuardTV-apk** artifact (a zip with the APK).
+3. When it finishes, download the **RivaTV-apk** artifact (a zip with the APK).
 
 ## Install on the screen
 - Copy the APK to a USB stick, plug it into the screen and open it with a file manager

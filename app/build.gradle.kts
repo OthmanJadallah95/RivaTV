@@ -9,7 +9,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.gguard.tv"
+        applicationId = "com.riva.tv"
         minSdk = 21
         targetSdk = 29
         versionCode = 1

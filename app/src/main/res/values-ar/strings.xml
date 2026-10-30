@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">G-Guard TV</string>
+    <string name="app_name">Riva TV</string>
     <string name="add_playlist">إضافة اشتراك</string>
     <string name="xtream_codes">Xtream Codes API</string>
     <string name="m3u_url">رابط M3U</string>

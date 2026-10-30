@@ -12,6 +12,7 @@ sed 's#<manifest #<manifest package="com.gguard.tv" #' $SRC/AndroidManifest.xml 
 "$TOOLS/aapt2" compile --dir $SRC/res -o $OUT/res.zip
 "$TOOLS/aapt2" link -I "$TOOLS/android.jar" --manifest $OUT/AndroidManifest.xml \
   --min-sdk-version 21 --target-sdk-version 29 --version-code 1 --version-name 1.0.0 \
+  --rename-manifest-package com.riva.tv \
   --java $OUT/gen -o $OUT/unsigned.apk $OUT/res.zip --auto-add-overlay
 
 find $SRC/java $OUT/gen -name '*.java' > $OUT/sources.txt
@@ -29,10 +30,10 @@ python3 "$(dirname "$0")/scripts/zipalign.py" $OUT/unsigned.apk $OUT/aligned.apk
 KS=${KEYSTORE:-$TOOLS/gguard.keystore}
 if [ ! -f "$KS" ]; then
   keytool -genkeypair -keystore "$KS" -storepass gguard123 -keypass gguard123 -alias gguard \
-    -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=G-Guard TV" >/dev/null 2>&1
+    -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Riva TV" >/dev/null 2>&1
 fi
 java -jar "$TOOLS/apksigner.jar" sign --ks "$KS" --ks-pass pass:gguard123 --ks-key-alias gguard \
   --min-sdk-version 21 --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true \
-  --out $OUT/GGuardTV.apk $OUT/aligned.apk
-java -jar "$TOOLS/apksigner.jar" verify --min-sdk-version 21 $OUT/GGuardTV.apk
-echo "Built $OUT/GGuardTV.apk"
+  --out $OUT/RivaTV.apk $OUT/aligned.apk
+java -jar "$TOOLS/apksigner.jar" verify --min-sdk-version 21 $OUT/RivaTV.apk
+echo "Built $OUT/RivaTV.apk"
