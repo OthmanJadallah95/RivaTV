@@ -52,4 +52,9 @@
     <string name="seconds_fmt">%1$d ث</string>
     <string name="seconds_dec_fmt">%1$s ث</string>
     <string name="vlc_fallback">لم يستطع VLC فتح القناة — تم التحويل إلى المشغّل المدمج</string>
+    <string name="speed_title">سرعة الإنترنت على الشاشة</string>
+    <string name="speed_off">إيقاف</string>
+    <string name="speed_always">دائماً</string>
+    <string name="speed_every_s">كل %1$d ثانية</string>
+    <string name="speed_every_m">كل %1$d دقيقة</string>
 </resources>

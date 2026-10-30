@@ -45,6 +45,7 @@ public class VlcPlayerActivity extends BaseActivity
     private View overlay, loading;
     private TextView tvChannel, tvEpg, tvError;
     private MediaController controller;
+    private SpeedMeter speedMeter;
 
     private LibVLC libVLC;
     private MediaPlayer mp;
@@ -79,6 +80,7 @@ public class VlcPlayerActivity extends BaseActivity
         tvChannel = findViewById(R.id.tvChannel);
         tvEpg = findViewById(R.id.tvEpg);
         tvError = findViewById(R.id.tvError);
+        speedMeter = new SpeedMeter(main, (TextView) findViewById(R.id.tvSpeed));
 
         index = savedInstanceState != null ? savedInstanceState.getInt(EXTRA_INDEX) : getIntent().getIntExtra(EXTRA_INDEX, 0);
         index = Math.max(0, Math.min(index, queue.size() - 1));
@@ -139,10 +141,12 @@ public class VlcPlayerActivity extends BaseActivity
         vout.attachViews(this);
         attached = true;
         play(index, startAt);
+        speedMeter.start();
     }
 
     @Override protected void onStop() {
         super.onStop();
+        if (speedMeter != null) speedMeter.stop();
         if (mp == null) return;
         if (!live) startAt = mp.getTime();
         if (controller != null) controller.hide();

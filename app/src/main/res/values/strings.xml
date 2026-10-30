@@ -52,4 +52,9 @@
     <string name="seconds_fmt">%1$d s</string>
     <string name="seconds_dec_fmt">%1$s s</string>
     <string name="vlc_fallback">VLC couldn\'t open this channel — switched to the built-in player</string>
+    <string name="speed_title">Internet speed on screen</string>
+    <string name="speed_off">Off</string>
+    <string name="speed_always">Always</string>
+    <string name="speed_every_s">Every %1$d seconds</string>
+    <string name="speed_every_m">Every %1$d min</string>
 </resources>

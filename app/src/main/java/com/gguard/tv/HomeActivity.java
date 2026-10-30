@@ -79,6 +79,7 @@ public class HomeActivity extends BaseActivity {
                 getString(R.string.player_title) + ":  " + getString("vlc".equals(Store.player()) ? R.string.player_vlc : R.string.player_system),
                 getString(R.string.buffer_title) + ":  " + getString(R.string.seconds_fmt, Store.bufferMs() / 1000),
                 getString(R.string.live_format_title) + ":  " + ("ts".equals(Store.liveExt()) ? "MPEG-TS" : "HLS"),
+                getString(R.string.speed_title) + ":  " + speedLabel(Store.speedMode()),
         };
         new AlertDialog.Builder(this)
                 .setTitle(R.string.settings)
@@ -86,7 +87,8 @@ public class HomeActivity extends BaseActivity {
                     @Override public void onClick(DialogInterface d, int which) {
                         if (which == 0) choosePlayer();
                         else if (which == 1) chooseBuffer();
-                        else chooseLiveFormat();
+                        else if (which == 2) chooseLiveFormat();
+                        else chooseSpeed();
                     }
                 })
                 .show();
@@ -121,6 +123,32 @@ public class HomeActivity extends BaseActivity {
                 .setSingleChoiceItems(options, current, new DialogInterface.OnClickListener() {
                     @Override public void onClick(DialogInterface d, int which) {
                         Store.setBufferMs(values[which]);
+                        d.dismiss();
+                        showSettings();
+                    }
+                })
+                .show();
+    }
+
+    private String speedLabel(int mode) {
+        if (mode == 0) return getString(R.string.speed_off);
+        if (mode == -1) return getString(R.string.speed_always);
+        return mode < 60 ? getString(R.string.speed_every_s, mode) : getString(R.string.speed_every_m, mode / 60);
+    }
+
+    private void chooseSpeed() {
+        final int[] modes = SpeedMeter.MODES;
+        String[] options = new String[modes.length];
+        int current = 0;
+        for (int i = 0; i < modes.length; i++) {
+            options[i] = speedLabel(modes[i]);
+            if (modes[i] == Store.speedMode()) current = i;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.speed_title)
+                .setSingleChoiceItems(options, current, new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int which) {
+                        Store.setSpeedMode(modes[which]);
                         d.dismiss();
                         showSettings();
                     }

@@ -48,6 +48,7 @@ public class PlayerActivity extends BaseActivity implements SurfaceHolder.Callba
     private View overlay, loading;
     private TextView tvChannel, tvEpg, tvError;
     private MediaController controller;
+    private SpeedMeter speedMeter;
 
     private MediaPlayer mp;
     private boolean prepared, surfaceReady;
@@ -81,6 +82,7 @@ public class PlayerActivity extends BaseActivity implements SurfaceHolder.Callba
         tvChannel = findViewById(R.id.tvChannel);
         tvEpg = findViewById(R.id.tvEpg);
         tvError = findViewById(R.id.tvError);
+        speedMeter = new SpeedMeter(main, (TextView) findViewById(R.id.tvSpeed));
         surface.getHolder().addCallback(this);
 
         index = savedInstanceState != null ? savedInstanceState.getInt(EXTRA_INDEX)
@@ -107,8 +109,14 @@ public class PlayerActivity extends BaseActivity implements SurfaceHolder.Callba
         out.putInt("pos", live ? 0 : getCurrentPosition());
     }
 
+    @Override protected void onStart() {
+        super.onStart();
+        if (speedMeter != null) speedMeter.start();
+    }
+
     @Override protected void onStop() {
         super.onStop();
+        if (speedMeter != null) speedMeter.stop();
         if (mp != null && !live) startAt = getCurrentPosition();
         if (controller != null) controller.hide();
         releasePlayer();

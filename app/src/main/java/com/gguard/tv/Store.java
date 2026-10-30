@@ -94,6 +94,11 @@ public final class Store {
 
     public static void setBufferMs(int ms) { settings.edit().putInt("buffer_ms", ms).apply(); }
 
+    /** Speed readout: 0 = off, -1 = always, otherwise every N seconds (see SpeedMeter.MODES). */
+    public static int speedMode() { return settings.getInt("speed_mode", 60); }
+
+    public static void setSpeedMode(int m) { settings.edit().putInt("speed_mode", m).apply(); }
+
     public static String liveExt() { return settings.getString("live_ext", "m3u8"); }
 
     public static void setLiveExt(String ext) { settings.edit().putString("live_ext", ext).apply(); }
