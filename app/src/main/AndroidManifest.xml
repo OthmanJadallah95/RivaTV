@@ -34,6 +34,7 @@
         <activity android:name=".HomeActivity" android:screenOrientation="landscape" />
         <activity android:name=".BrowseActivity" android:screenOrientation="landscape" android:windowSoftInputMode="stateHidden|adjustPan" />
         <activity android:name=".SeriesActivity" android:screenOrientation="landscape" />
+        <activity android:name=".ContinueActivity" android:screenOrientation="landscape" />
         <activity
             android:name=".PlayerActivity"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize"

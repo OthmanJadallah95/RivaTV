@@ -57,4 +57,5 @@
     <string name="speed_always">Always</string>
     <string name="speed_every_s">Every %1$d seconds</string>
     <string name="speed_every_m">Every %1$d min</string>
+    <string name="continue_watching">Continue watching</string>
 </resources>

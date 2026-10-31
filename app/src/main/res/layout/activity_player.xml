@@ -46,6 +46,46 @@
             android:visibility="gone" />
     </LinearLayout>
 
+    <LinearLayout
+        android:id="@+id/controls"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_margin="24dp"
+        android:background="@drawable/bg_overlay"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="14dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/ctrlPos"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="64dp"
+            android:textColor="@color/text"
+            android:textSize="15sp" />
+
+        <SeekBar
+            android:id="@+id/ctrlSeek"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="12dp"
+            android:layout_weight="1"
+            android:progressTint="@color/accent"
+            android:thumbTint="@color/accent" />
+
+        <TextView
+            android:id="@+id/ctrlDur"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="64dp"
+            android:gravity="end"
+            android:textColor="@color/text"
+            android:textSize="15sp" />
+    </LinearLayout>
+
     <TextView
         android:id="@+id/tvSpeed"
         android:layout_width="wrap_content"

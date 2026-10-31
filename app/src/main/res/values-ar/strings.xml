@@ -57,4 +57,5 @@
     <string name="speed_always">دائماً</string>
     <string name="speed_every_s">كل %1$d ثانية</string>
     <string name="speed_every_m">كل %1$d دقيقة</string>
+    <string name="continue_watching">متابعة المشاهدة</string>
 </resources>

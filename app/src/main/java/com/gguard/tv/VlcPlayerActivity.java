@@ -9,8 +9,8 @@ import android.view.KeyEvent;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.FrameLayout;
 import android.widget.MediaController;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,24 +27,25 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
- * Player built on libVLC: large network buffer, automatic reconnect and its own decoders,
- * which copes with unstable IPTV streams better than the TV's built-in player.
- * If VLC can't open a stream at all, it hands over to {@link PlayerActivity}.
+ * Player built on libVLC: large network buffer, automatic reconnect and its own decoders.
+ * VOD positions are saved to ResumeStore for Continue Watching. If VLC can't open a stream,
+ * it hands over to {@link PlayerActivity}. Seeking is a fixed 10 s (Left/Right).
  */
 public class VlcPlayerActivity extends BaseActivity
         implements IVLCVout.OnNewVideoLayoutListener, MediaController.MediaPlayerControl {
     private static final String EXTRA_INDEX = "index", EXTRA_LIVE = "live";
+    private static final int SEEK_MS = 10000;
     private static final int[] RESIZE_LABELS = {R.string.resize_fit, R.string.resize_fill, R.string.resize_zoom};
 
     public static void start(Context ctx, int index, boolean live) {
         ctx.startActivity(new Intent(ctx, VlcPlayerActivity.class).putExtra(EXTRA_INDEX, index).putExtra(EXTRA_LIVE, live));
     }
 
-    private FrameLayout root;
+    private android.widget.FrameLayout root;
     private SurfaceView surface;
     private View overlay, loading;
     private TextView tvChannel, tvEpg, tvError;
-    private MediaController controller;
+    private PlayerControls controls;
     private SpeedMeter speedMeter;
 
     private LibVLC libVLC;
@@ -62,6 +63,9 @@ public class VlcPlayerActivity extends BaseActivity
 
     private final Runnable hideOverlay = new Runnable() {
         @Override public void run() { overlay.setVisibility(View.GONE); }
+    };
+    private final Runnable saveProgress = new Runnable() {
+        @Override public void run() { saveResume(); main.postDelayed(this, 5000); }
     };
 
     @Override protected void onCreate(Bundle savedInstanceState) {
@@ -105,16 +109,9 @@ public class VlcPlayerActivity extends BaseActivity
             @Override public void onEvent(MediaPlayer.Event e) { onVlcEvent(e); }
         });
 
-        controller = new MediaController(this);
-        controller.setMediaPlayer(this);
-        controller.setAnchorView(root);
-        if (queue.size() > 1 && !live) {
-            controller.setPrevNextListeners(new View.OnClickListener() {
-                @Override public void onClick(View v) { if (index < queue.size() - 1) play(index + 1, 0); }
-            }, new View.OnClickListener() {
-                @Override public void onClick(View v) { if (index > 0) play(index - 1, 0); }
-            });
-        }
+        controls = new PlayerControls(findViewById(R.id.controls), (TextView) findViewById(R.id.ctrlPos),
+                (SeekBar) findViewById(R.id.ctrlSeek), (TextView) findViewById(R.id.ctrlDur), this, main);
+        controls.setEnabled(!live);
 
         root.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
             @Override public void onLayoutChange(View v, int l, int t, int r, int b, int ol, int ot, int or, int ob) {
@@ -147,9 +144,10 @@ public class VlcPlayerActivity extends BaseActivity
     @Override protected void onStop() {
         super.onStop();
         if (speedMeter != null) speedMeter.stop();
+        main.removeCallbacks(saveProgress);
+        saveResume();
         if (mp == null) return;
         if (!live) startAt = mp.getTime();
-        if (controller != null) controller.hide();
         mp.stop();
         if (attached) { mp.getVLCVout().detachViews(); attached = false; }
     }
@@ -161,6 +159,7 @@ public class VlcPlayerActivity extends BaseActivity
     }
 
     @Override protected void onDestroy() {
+        main.removeCallbacks(saveProgress);
         if (mp != null) { mp.setEventListener(null); mp.release(); mp = null; }
         if (libVLC != null) { libVLC.release(); libVLC = null; }
         super.onDestroy();
@@ -176,8 +175,12 @@ public class VlcPlayerActivity extends BaseActivity
         currentUrl = url;
         retries = 0;
         everPlayed = false;
-        startUrl(url, positionMs);
+        long start = positionMs;
+        if (start <= 0 && !live) start = ResumeStore.position(item);
+        startUrl(url, start);
         showOverlay(item);
+        main.removeCallbacks(saveProgress);
+        if (!live) main.postDelayed(saveProgress, 5000);
     }
 
     private void startUrl(String url, long positionMs) {
@@ -209,8 +212,9 @@ public class VlcPlayerActivity extends BaseActivity
                 handleError();
                 break;
             case MediaPlayer.Event.EndReached:
-                if (live) handleError();                       // live streams shouldn't end: reconnect
-                else if (index < queue.size() - 1) play(index + 1, 0);
+                if (live) { handleError(); break; }
+                ResumeStore.remove(queue.get(index));   // finished
+                if (index < queue.size() - 1) play(index + 1, 0);
                 else finish();
                 break;
             default:
@@ -220,7 +224,6 @@ public class VlcPlayerActivity extends BaseActivity
 
     private void handleError() {
         loading.setVisibility(View.GONE);
-        // Some providers serve only one live format: try the other one once.
         if (live && retries == 0 && (currentUrl.endsWith(".ts") || currentUrl.endsWith(".m3u8"))) {
             retries++;
             currentUrl = currentUrl.endsWith(".ts")
@@ -229,7 +232,6 @@ public class VlcPlayerActivity extends BaseActivity
             startUrl(currentUrl, 0);
             return;
         }
-        // VLC never managed to open this stream (e.g. the provider refuses VLC): use the built-in player.
         if (!everPlayed && retries >= 1) { fallbackToSystem(); return; }
         if (retries < 5) {
             retries++;
@@ -242,6 +244,14 @@ public class VlcPlayerActivity extends BaseActivity
             return;
         }
         showError(getString(R.string.playback_error, "VLC"));
+    }
+
+    private void saveResume() {
+        if (live || mp == null) return;
+        try {
+            long len = mp.getLength(), pos = mp.getTime();
+            if (len > 0) ResumeStore.save(queue.get(index), pos, len);
+        } catch (Exception ignored) { }
     }
 
     private void showError(String msg) {
@@ -258,7 +268,6 @@ public class VlcPlayerActivity extends BaseActivity
         applySize();
     }
 
-    /** Fit (letterbox), Stretch (fill the screen) or Zoom (fill and crop). */
     private void applySize() {
         if (mp == null) return;
         int sw = root.getWidth(), sh = root.getHeight();
@@ -307,16 +316,19 @@ public class VlcPlayerActivity extends BaseActivity
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
         if (event.getAction() == KeyEvent.ACTION_DOWN && mp != null) {
             int k = event.getKeyCode();
+            boolean repeat = event.getRepeatCount() > 0;
             if (k == KeyEvent.KEYCODE_MENU || k == KeyEvent.KEYCODE_INFO) {
-                resizeIdx = (resizeIdx + 1) % RESIZE_LABELS.length;
-                applySize();
-                Toast.makeText(this, RESIZE_LABELS[resizeIdx], Toast.LENGTH_SHORT).show();
+                if (!repeat) {
+                    resizeIdx = (resizeIdx + 1) % RESIZE_LABELS.length;
+                    applySize();
+                    Toast.makeText(this, RESIZE_LABELS[resizeIdx], Toast.LENGTH_SHORT).show();
+                }
                 return true;
             }
             if (live) {
                 switch (k) {
-                    case KeyEvent.KEYCODE_DPAD_UP: case KeyEvent.KEYCODE_CHANNEL_UP: zap(1); return true;
-                    case KeyEvent.KEYCODE_DPAD_DOWN: case KeyEvent.KEYCODE_CHANNEL_DOWN: zap(-1); return true;
+                    case KeyEvent.KEYCODE_DPAD_UP: case KeyEvent.KEYCODE_CHANNEL_UP: if (!repeat) zap(1); return true;
+                    case KeyEvent.KEYCODE_DPAD_DOWN: case KeyEvent.KEYCODE_CHANNEL_DOWN: if (!repeat) zap(-1); return true;
                     case KeyEvent.KEYCODE_DPAD_LEFT: case KeyEvent.KEYCODE_DPAD_RIGHT:
                     case KeyEvent.KEYCODE_DPAD_CENTER: case KeyEvent.KEYCODE_ENTER:
                         showOverlay(queue.get(index)); return true;
@@ -325,16 +337,16 @@ public class VlcPlayerActivity extends BaseActivity
             } else {
                 switch (k) {
                     case KeyEvent.KEYCODE_DPAD_CENTER: case KeyEvent.KEYCODE_ENTER:
-                        controller.show(4000); showOverlay(queue.get(index)); return true;
+                        controls.show(); showOverlay(queue.get(index)); return true;
                     case KeyEvent.KEYCODE_DPAD_LEFT: case KeyEvent.KEYCODE_MEDIA_REWIND:
-                        seekBy(-10000); return true;
+                        seekBy(-SEEK_MS); return true;
                     case KeyEvent.KEYCODE_DPAD_RIGHT: case KeyEvent.KEYCODE_MEDIA_FAST_FORWARD:
-                        seekBy(10000); return true;
+                        seekBy(SEEK_MS); return true;
                     case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE: case KeyEvent.KEYCODE_SPACE:
                         if (isPlaying()) pause(); else start();
-                        controller.show(3000); return true;
-                    case KeyEvent.KEYCODE_MEDIA_PLAY: start(); return true;
-                    case KeyEvent.KEYCODE_MEDIA_PAUSE: pause(); controller.show(0); return true;
+                        controls.show(); return true;
+                    case KeyEvent.KEYCODE_MEDIA_PLAY: start(); controls.show(); return true;
+                    case KeyEvent.KEYCODE_MEDIA_PAUSE: pause(); controls.show(); return true;
                     default: break;
                 }
             }
@@ -348,7 +360,7 @@ public class VlcPlayerActivity extends BaseActivity
         long target = Math.max(0, mp.getTime() + deltaMs);
         if (len > 0) target = Math.min(target, len - 1000);
         mp.setTime(target);
-        controller.show(3000);
+        controls.show();
     }
 
     // ---- MediaController.MediaPlayerControl ----

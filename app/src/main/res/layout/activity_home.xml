@@ -56,9 +56,31 @@
         android:textSize="16sp" />
 
     <LinearLayout
+        android:id="@+id/rowContinue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <LinearLayout android:id="@+id/tileContinue" style="@style/Tile"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="start|center_vertical"
+            android:paddingStart="20dp" android:paddingEnd="20dp"
+            android:paddingTop="16dp" android:paddingBottom="16dp">
+            <ImageView android:layout_width="34dp" android:layout_height="34dp"
+                android:tint="@color/accent" android:src="@drawable/ic_history" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginStart="14dp" android:textColor="@color/text"
+                android:textSize="18sp" android:textStyle="bold" android:text="@string/continue_watching" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="28dp"
+        android:layout_marginTop="20dp"
         android:layout_weight="2"
         android:orientation="horizontal">
 

@@ -14,9 +14,11 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.MediaController;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.gguard.tv.Models.ContentType;
 import com.gguard.tv.Models.EpgEntry;
 import com.gguard.tv.Models.StreamItem;
 
@@ -27,12 +29,13 @@ import java.util.concurrent.Callable;
 
 /**
  * Full-screen player on the platform MediaPlayer. Live TV: Up/Down or CH+/CH- switch channel.
- * Movies/episodes: OK shows controls, Left/Right seek 10 s. Menu/Info cycles Fit / Stretch / Zoom.
+ * Movies/episodes: OK shows controls, Left/Right seek 10 s, and the position is remembered in
+ * ResumeStore so Continue Watching can pick it up again. Menu/Info cycles Fit / Stretch / Zoom.
  */
 public class PlayerActivity extends BaseActivity implements SurfaceHolder.Callback, MediaController.MediaPlayerControl {
     private static final String EXTRA_INDEX = "index", EXTRA_LIVE = "live";
+    private static final int SEEK_MS = 10000;
 
-    /** Opens the player chosen in Settings (VLC by default, which falls back to this one if it can't play). */
     public static void start(Context ctx, int index, boolean live) {
         if ("vlc".equals(Store.player())) VlcPlayerActivity.start(ctx, index, live);
         else startSystem(ctx, index, live);
@@ -47,7 +50,7 @@ public class PlayerActivity extends BaseActivity implements SurfaceHolder.Callba
     private SurfaceView surface;
     private View overlay, loading;
     private TextView tvChannel, tvEpg, tvError;
-    private MediaController controller;
+    private PlayerControls controls;
     private SpeedMeter speedMeter;
 
     private MediaPlayer mp;
@@ -57,13 +60,19 @@ public class PlayerActivity extends BaseActivity implements SurfaceHolder.Callba
     private boolean live;
     private String currentUrl = "";
     private int retries;
-    private int startAt;
+    private int resumePosition;
     private int videoW, videoH;
     private int resizeIdx;
     private static final int[] RESIZE_LABELS = {R.string.resize_fit, R.string.resize_fill, R.string.resize_zoom};
 
     private final Runnable hideOverlay = new Runnable() {
         @Override public void run() { overlay.setVisibility(View.GONE); }
+    };
+    private final Runnable saveProgress = new Runnable() {
+        @Override public void run() {
+            saveResume();
+            main.postDelayed(this, 5000);
+        }
     };
 
     @Override protected void onCreate(Bundle savedInstanceState) {
@@ -89,18 +98,16 @@ public class PlayerActivity extends BaseActivity implements SurfaceHolder.Callba
                 : getIntent().getIntExtra(EXTRA_INDEX, 0);
         index = Math.max(0, Math.min(index, queue.size() - 1));
         live = getIntent().getBooleanExtra(EXTRA_LIVE, false);
-        startAt = savedInstanceState != null ? savedInstanceState.getInt("pos") : 0;
+        resumePosition = savedInstanceState != null ? savedInstanceState.getInt("pos") : 0;
 
-        controller = new MediaController(this);
-        controller.setMediaPlayer(this);
-        controller.setAnchorView(root);
-        if (queue.size() > 1 && !live) {
-            controller.setPrevNextListeners(new View.OnClickListener() {
-                @Override public void onClick(View v) { if (index < queue.size() - 1) play(index + 1, 0); }
-            }, new View.OnClickListener() {
-                @Override public void onClick(View v) { if (index > 0) play(index - 1, 0); }
-            });
-        }
+        controls = new PlayerControls(findViewById(R.id.controls), (TextView) findViewById(R.id.ctrlPos),
+                (SeekBar) findViewById(R.id.ctrlSeek), (TextView) findViewById(R.id.ctrlDur), this, main);
+        controls.setEnabled(!live);
+    }
+
+    @Override protected void onStart() {
+        super.onStart();
+        if (speedMeter != null) speedMeter.start();
     }
 
     @Override protected void onSaveInstanceState(Bundle out) {
@@ -109,20 +116,17 @@ public class PlayerActivity extends BaseActivity implements SurfaceHolder.Callba
         out.putInt("pos", live ? 0 : getCurrentPosition());
     }
 
-    @Override protected void onStart() {
-        super.onStart();
-        if (speedMeter != null) speedMeter.start();
-    }
-
     @Override protected void onStop() {
         super.onStop();
         if (speedMeter != null) speedMeter.stop();
-        if (mp != null && !live) startAt = getCurrentPosition();
-        if (controller != null) controller.hide();
+        main.removeCallbacks(saveProgress);
+        saveResume();
+        if (mp != null && !live) resumePosition = getCurrentPosition();
         releasePlayer();
     }
 
     @Override protected void onDestroy() {
+        main.removeCallbacks(saveProgress);
         releasePlayer();
         super.onDestroy();
     }
@@ -131,7 +135,7 @@ public class PlayerActivity extends BaseActivity implements SurfaceHolder.Callba
 
     @Override public void surfaceCreated(SurfaceHolder holder) {
         surfaceReady = true;
-        if (mp == null) play(index, startAt);
+        if (mp == null) play(index, resumePosition);
         else mp.setDisplay(holder);
     }
 
@@ -139,7 +143,7 @@ public class PlayerActivity extends BaseActivity implements SurfaceHolder.Callba
 
     @Override public void surfaceDestroyed(SurfaceHolder holder) {
         surfaceReady = false;
-        if (mp != null && !live) startAt = getCurrentPosition();
+        if (mp != null && !live) resumePosition = getCurrentPosition();
         releasePlayer();
     }
 
@@ -161,8 +165,13 @@ public class PlayerActivity extends BaseActivity implements SurfaceHolder.Callba
         if (url == null || url.isEmpty()) { showError(getString(R.string.empty)); return; }
         currentUrl = url;
         retries = 0;
-        startUrl(url, positionMs);
+        // When no explicit position is given, continue where this title was last left off.
+        int start = positionMs;
+        if (start <= 0 && !live) start = (int) ResumeStore.position(item);
+        startUrl(url, start);
         showOverlay(item);
+        main.removeCallbacks(saveProgress);
+        if (!live) main.postDelayed(saveProgress, 5000);
     }
 
     private void startUrl(String url, final int positionMs) {
@@ -212,8 +221,9 @@ public class PlayerActivity extends BaseActivity implements SurfaceHolder.Callba
             p.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                 @Override public void onCompletion(MediaPlayer m) {
                     if (m != mp) return;
-                    if (live) handleError("ended");          // a live stream should never end: reconnect
-                    else if (index < queue.size() - 1) play(index + 1, 0);
+                    if (live) { handleError("ended"); return; }
+                    ResumeStore.remove(queue.get(index));   // finished
+                    if (index < queue.size() - 1) play(index + 1, 0);
                     else finish();
                 }
             });
@@ -225,7 +235,6 @@ public class PlayerActivity extends BaseActivity implements SurfaceHolder.Callba
 
     private void handleError(String code) {
         loading.setVisibility(View.GONE);
-        // Some providers serve only one live format: try the other one once.
         if (live && retries == 0 && (currentUrl.endsWith(".ts") || currentUrl.endsWith(".m3u8"))) {
             retries++;
             currentUrl = currentUrl.endsWith(".ts")
@@ -247,12 +256,16 @@ public class PlayerActivity extends BaseActivity implements SurfaceHolder.Callba
         showError(getString(R.string.playback_error, code));
     }
 
+    private void saveResume() {
+        if (live || mp == null || !prepared) return;
+        try { ResumeStore.save(queue.get(index), getCurrentPosition(), getDuration()); } catch (Exception ignored) { }
+    }
+
     private void showError(String msg) {
         tvError.setText(msg);
         tvError.setVisibility(View.VISIBLE);
     }
 
-    /** Sizes the surface for Fit (letterbox), Stretch (fill) or Zoom (crop). */
     private void applySize() {
         int pw = root.getWidth(), ph = root.getHeight();
         if (pw == 0 || ph == 0) return;
@@ -264,8 +277,7 @@ public class PlayerActivity extends BaseActivity implements SurfaceHolder.Callba
             w = Math.round(videoW * scale);
             h = Math.round(videoH * scale);
         }
-        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(w, h, Gravity.CENTER);
-        surface.setLayoutParams(lp);
+        surface.setLayoutParams(new FrameLayout.LayoutParams(w, h, Gravity.CENTER));
     }
 
     private void showOverlay(final StreamItem item) {
@@ -300,16 +312,19 @@ public class PlayerActivity extends BaseActivity implements SurfaceHolder.Callba
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
             int k = event.getKeyCode();
+            boolean repeat = event.getRepeatCount() > 0;
             if (k == KeyEvent.KEYCODE_MENU || k == KeyEvent.KEYCODE_INFO) {
-                resizeIdx = (resizeIdx + 1) % RESIZE_LABELS.length;
-                applySize();
-                Toast.makeText(this, RESIZE_LABELS[resizeIdx], Toast.LENGTH_SHORT).show();
+                if (!repeat) {
+                    resizeIdx = (resizeIdx + 1) % RESIZE_LABELS.length;
+                    applySize();
+                    Toast.makeText(this, RESIZE_LABELS[resizeIdx], Toast.LENGTH_SHORT).show();
+                }
                 return true;
             }
             if (live) {
                 switch (k) {
-                    case KeyEvent.KEYCODE_DPAD_UP: case KeyEvent.KEYCODE_CHANNEL_UP: zap(1); return true;
-                    case KeyEvent.KEYCODE_DPAD_DOWN: case KeyEvent.KEYCODE_CHANNEL_DOWN: zap(-1); return true;
+                    case KeyEvent.KEYCODE_DPAD_UP: case KeyEvent.KEYCODE_CHANNEL_UP: if (!repeat) zap(1); return true;
+                    case KeyEvent.KEYCODE_DPAD_DOWN: case KeyEvent.KEYCODE_CHANNEL_DOWN: if (!repeat) zap(-1); return true;
                     case KeyEvent.KEYCODE_DPAD_LEFT: case KeyEvent.KEYCODE_DPAD_RIGHT:
                     case KeyEvent.KEYCODE_DPAD_CENTER: case KeyEvent.KEYCODE_ENTER:
                         showOverlay(queue.get(index)); return true;
@@ -318,16 +333,16 @@ public class PlayerActivity extends BaseActivity implements SurfaceHolder.Callba
             } else {
                 switch (k) {
                     case KeyEvent.KEYCODE_DPAD_CENTER: case KeyEvent.KEYCODE_ENTER:
-                        controller.show(4000); showOverlay(queue.get(index)); return true;
+                        controls.show(); showOverlay(queue.get(index)); return true;
                     case KeyEvent.KEYCODE_DPAD_LEFT: case KeyEvent.KEYCODE_MEDIA_REWIND:
-                        seekBy(-10000); return true;
+                        seekBy(-SEEK_MS); return true;
                     case KeyEvent.KEYCODE_DPAD_RIGHT: case KeyEvent.KEYCODE_MEDIA_FAST_FORWARD:
-                        seekBy(10000); return true;
+                        seekBy(SEEK_MS); return true;
                     case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE: case KeyEvent.KEYCODE_SPACE:
                         if (isPlaying()) pause(); else start();
-                        controller.show(3000); return true;
-                    case KeyEvent.KEYCODE_MEDIA_PLAY: start(); return true;
-                    case KeyEvent.KEYCODE_MEDIA_PAUSE: pause(); controller.show(0); return true;
+                        controls.show(); return true;
+                    case KeyEvent.KEYCODE_MEDIA_PLAY: start(); controls.show(); return true;
+                    case KeyEvent.KEYCODE_MEDIA_PAUSE: pause(); controls.show(); return true;
                     default: break;
                 }
             }
@@ -341,7 +356,7 @@ public class PlayerActivity extends BaseActivity implements SurfaceHolder.Callba
         int target = Math.max(0, getCurrentPosition() + deltaMs);
         if (d > 0) target = Math.min(target, d - 1000);
         seekTo(target);
-        controller.show(3000);
+        controls.show();
     }
 
     // ---- MediaController.MediaPlayerControl ----

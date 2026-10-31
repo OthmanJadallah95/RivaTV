@@ -21,6 +21,7 @@ public abstract class BaseActivity extends Activity {
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Store.init(this);
+        ResumeStore.init(this);
     }
 
     @Override protected void onDestroy() {

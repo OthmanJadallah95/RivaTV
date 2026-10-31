@@ -11,6 +11,7 @@ import com.gguard.tv.Models.Category;
 import com.gguard.tv.Models.Episode;
 import com.gguard.tv.Models.Profile;
 import com.gguard.tv.Models.StreamItem;
+import com.gguard.tv.ResumeStore;
 
 import java.util.Collections;
 import java.util.List;
@@ -114,6 +115,30 @@ public final class Adapters {
             ((TextView) v.findViewById(R.id.tvName)).setText(p.name);
             ((TextView) v.findViewById(R.id.tvSub)).setText(p.isXtream()
                     ? "Xtream • " + p.server + " • " + p.username : "M3U • " + p.m3uUrl);
+            return v;
+        }
+    }
+
+    public static final class ResumeAdapter extends BaseAdapter {
+        private final LayoutInflater inflater;
+        private final int imagePx;
+        public List<ResumeStore.Entry> items = Collections.emptyList();
+
+        public ResumeAdapter(LayoutInflater inflater) {
+            this.inflater = inflater;
+            this.imagePx = (int) (160 * inflater.getContext().getResources().getDisplayMetrics().density);
+        }
+
+        @Override public int getCount() { return items.size(); }
+        @Override public ResumeStore.Entry getItem(int i) { return items.get(i); }
+        @Override public long getItemId(int i) { return i; }
+
+        @Override public View getView(int pos, View convert, ViewGroup parent) {
+            View v = convert != null ? convert : inflater.inflate(R.layout.item_resume, parent, false);
+            ResumeStore.Entry e = items.get(pos);
+            ((TextView) v.findViewById(R.id.tvName)).setText(e.item.name);
+            ((android.widget.ProgressBar) v.findViewById(R.id.pbProgress)).setProgress(Math.max(3, e.percent()));
+            ImageLoader.load((ImageView) v.findViewById(R.id.ivPoster), e.item.logo, imagePx);
             return v;
         }
     }

@@ -41,8 +41,15 @@ public class HomeActivity extends BaseActivity {
             }
         });
         tile(R.id.tileSettings, new Runnable() { @Override public void run() { showSettings(); } });
+        tile(R.id.tileContinue, new Runnable() { @Override public void run() { ContinueActivity.start(HomeActivity.this); } });
         findViewById(R.id.tileLive).requestFocus();
         loadAccount();
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        boolean has = !ResumeStore.list().isEmpty();
+        findViewById(R.id.rowContinue).setVisibility(has ? android.view.View.VISIBLE : android.view.View.GONE);
     }
 
     private void tile(int id, final Runnable action) {

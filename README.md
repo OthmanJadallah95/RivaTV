@@ -10,6 +10,7 @@ to the TV's built-in player automatically if VLC can't open a stream.
 - **Live TV**: categories, channel list with logos, full-screen player,
   Up/Down or CH+/CH- to switch channels, Now/Next EPG
 - **Movies** and **Series** (seasons → episodes, auto-plays next episode)
+- **Continue watching**: movies & episodes resume where you stopped (Home row)
 - Search, favorites (long-press OK or the Menu key), account status and expiry
 - Live format setting (.ts or .m3u8) with automatic fallback to .m3u8
 - Picture size: Menu/Info key cycles Fit / Stretch / Zoom
