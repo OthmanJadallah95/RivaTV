@@ -20,6 +20,8 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: ''
+      - name: Fetch libVLC (native libs + Java bindings, git-ignored in the repo)
+        run: bash scripts/fetch_libvlc.sh
       - name: Build APK
         id: build
         shell: bash
