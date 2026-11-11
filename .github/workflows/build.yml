@@ -18,6 +18,8 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: android-actions/setup-android@v3
+        with:
+          packages: ''
       - name: Build APK
         id: build
         shell: bash
