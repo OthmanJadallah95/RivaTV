@@ -35,6 +35,8 @@ public class VlcPlayerActivity extends BaseActivity
         implements IVLCVout.OnNewVideoLayoutListener, MediaController.MediaPlayerControl {
     private static final String EXTRA_INDEX = "index", EXTRA_LIVE = "live";
     private static final int SEEK_MS = 10000;
+    private static final long MIN_RESUME_END = 3000;   // ignore a very-early EndReached as a glitch
+    private static final long END_MARGIN_MS = 8000;     // within 8 s of the end counts as a real finish
     private static final int[] RESIZE_LABELS = {R.string.resize_fit, R.string.resize_fill, R.string.resize_zoom};
 
     public static void start(Context ctx, int index, boolean live) {
@@ -43,10 +45,15 @@ public class VlcPlayerActivity extends BaseActivity
 
     private android.widget.FrameLayout root;
     private SurfaceView surface;
-    private View overlay, loading;
-    private TextView tvChannel, tvEpg, tvError;
+    private View overlay, loading, actions;
+    private TextView tvChannel, tvEpg, tvError, actPrev, actReplay, actNext;
     private PlayerControls controls;
     private SpeedMeter speedMeter;
+
+    private boolean actionsOpen;
+    private int actIdx = 1;             // 0=prev, 1=replay, 2=next
+    private int seekStreak, seekDir;
+    private long lastSeekAt;
 
     private LibVLC libVLC;
     private MediaPlayer mp;
@@ -57,6 +64,8 @@ public class VlcPlayerActivity extends BaseActivity
     private int retries;
     private boolean everPlayed;
     private long startAt;
+    private long lastPos, lastLen;   // tracked live to detect a spurious EndReached mid-playback
+    private int endRetries;
     private int resizeIdx;
     private int videoW, videoH;
     private boolean attached;
@@ -84,6 +93,16 @@ public class VlcPlayerActivity extends BaseActivity
         tvChannel = findViewById(R.id.tvChannel);
         tvEpg = findViewById(R.id.tvEpg);
         tvError = findViewById(R.id.tvError);
+        actions = findViewById(R.id.actions);
+        actPrev = findViewById(R.id.actPrev);
+        actReplay = findViewById(R.id.actReplay);
+        actNext = findViewById(R.id.actNext);
+        actPrev.setText(R.string.prev_ep);
+        actReplay.setText(R.string.replay);
+        actNext.setText(R.string.next_ep);
+        actPrev.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { hideActions(); prevEpisode(); } });
+        actReplay.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { hideActions(); replayFromStart(); } });
+        actNext.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { hideActions(); nextEpisode(); } });
         speedMeter = new SpeedMeter(main, (TextView) findViewById(R.id.tvSpeed));
 
         index = savedInstanceState != null ? savedInstanceState.getInt(EXTRA_INDEX) : getIntent().getIntExtra(EXTRA_INDEX, 0);
@@ -205,14 +224,30 @@ public class VlcPlayerActivity extends BaseActivity
             case MediaPlayer.Event.Playing:
                 everPlayed = true;
                 retries = 0;
+                endRetries = 0;
                 loading.setVisibility(View.GONE);
                 tvError.setVisibility(View.GONE);
+                break;
+            case MediaPlayer.Event.TimeChanged:
+                if (mp != null) { long tpos = mp.getTime(); if (tpos > 0) lastPos = tpos; }
+                break;
+            case MediaPlayer.Event.LengthChanged:
+                if (mp != null) { long tlen = mp.getLength(); if (tlen > 0) lastLen = tlen; }
                 break;
             case MediaPlayer.Event.EncounteredError:
                 handleError();
                 break;
             case MediaPlayer.Event.EndReached:
                 if (live) { handleError(); break; }
+                // VLC sometimes fires EndReached on a network stall mid-playback. If we are
+                // clearly before the real end, treat it as a stall and resume, not a finish.
+                long len = lastLen > 0 ? lastLen : (mp != null ? mp.getLength() : 0);
+                if (len > 0 && lastPos > MIN_RESUME_END && lastPos < len - END_MARGIN_MS
+                        && lastPos < len * 0.95 && endRetries < 4) {
+                    endRetries++;
+                    startUrl(currentUrl, lastPos);
+                    break;
+                }
                 ResumeStore.remove(queue.get(index));   // finished
                 if (index < queue.size() - 1) play(index + 1, 0);
                 else finish();
@@ -313,10 +348,57 @@ public class VlcPlayerActivity extends BaseActivity
         play(((index + delta) % n + n) % n, 0);
     }
 
+    // ---- VOD action buttons (previous / replay / next) ----
+    private void showActions() {
+        actionsOpen = true; actIdx = 1; renderActions();
+        actions.setVisibility(View.VISIBLE);
+        showOverlay(queue.get(index));
+    }
+    private void hideActions() { actionsOpen = false; actions.setVisibility(View.GONE); }
+    private void renderActions() {
+        actPrev.setActivated(actIdx == 0);
+        actReplay.setActivated(actIdx == 1);
+        actNext.setActivated(actIdx == 2);
+    }
+    private void moveAct(int d) { actIdx = Math.max(0, Math.min(2, actIdx + d)); renderActions(); }
+    private void doAct() {
+        hideActions();
+        if (actIdx == 0) prevEpisode();
+        else if (actIdx == 1) replayFromStart();
+        else nextEpisode();
+    }
+    private void replayFromStart() { play(index, 1); }   // 1 ms ≈ from the very start, bypassing resume
+    private void nextEpisode() {
+        if (index >= queue.size() - 1) { Toast.makeText(this, R.string.last_ep, Toast.LENGTH_SHORT).show(); return; }
+        saveResume(); play(index + 1, 1);
+    }
+    private void prevEpisode() { if (index > 0) { saveResume(); play(index - 1, 1); } }
+
+    // Progressive seek: repeated presses grow the jump (10s ×3 → 30s → 60s → 120s).
+    private void seekStep(int dir) {
+        long now = System.currentTimeMillis();
+        if (dir == seekDir && (now - lastSeekAt) < 1600) seekStreak++; else seekStreak = 1;
+        seekDir = dir; lastSeekAt = now;
+        int secs = seekStreak <= 3 ? 10 : seekStreak <= 6 ? 30 : seekStreak <= 9 ? 60 : 120;
+        seekBy(dir * secs * 1000);
+        if (secs > 10) Toast.makeText(this, (dir > 0 ? "⏩ +" : "⏪ -") + secs + "s", Toast.LENGTH_SHORT).show();
+    }
+
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
         if (event.getAction() == KeyEvent.ACTION_DOWN && mp != null) {
             int k = event.getKeyCode();
             boolean repeat = event.getRepeatCount() > 0;
+            // While the action row is open, arrows navigate it instead of seeking.
+            if (actionsOpen && !live) {
+                switch (k) {
+                    case KeyEvent.KEYCODE_DPAD_LEFT: moveAct(-1); return true;
+                    case KeyEvent.KEYCODE_DPAD_RIGHT: moveAct(1); return true;
+                    case KeyEvent.KEYCODE_DPAD_CENTER: case KeyEvent.KEYCODE_ENTER: doAct(); return true;
+                    case KeyEvent.KEYCODE_DPAD_DOWN: case KeyEvent.KEYCODE_BACK: hideActions(); return true;
+                    case KeyEvent.KEYCODE_DPAD_UP: return true;
+                    default: break;
+                }
+            }
             if (k == KeyEvent.KEYCODE_MENU || k == KeyEvent.KEYCODE_INFO) {
                 if (!repeat) {
                     resizeIdx = (resizeIdx + 1) % RESIZE_LABELS.length;
@@ -336,12 +418,18 @@ public class VlcPlayerActivity extends BaseActivity
                 }
             } else {
                 switch (k) {
+                    case KeyEvent.KEYCODE_DPAD_UP:
+                        if (!repeat) showActions(); return true;
                     case KeyEvent.KEYCODE_DPAD_CENTER: case KeyEvent.KEYCODE_ENTER:
                         controls.show(); showOverlay(queue.get(index)); return true;
                     case KeyEvent.KEYCODE_DPAD_LEFT: case KeyEvent.KEYCODE_MEDIA_REWIND:
-                        seekBy(-SEEK_MS); return true;
+                        seekStep(-1); return true;
                     case KeyEvent.KEYCODE_DPAD_RIGHT: case KeyEvent.KEYCODE_MEDIA_FAST_FORWARD:
-                        seekBy(SEEK_MS); return true;
+                        seekStep(1); return true;
+                    case KeyEvent.KEYCODE_CHANNEL_UP: case KeyEvent.KEYCODE_MEDIA_NEXT:
+                        if (!repeat) nextEpisode(); return true;
+                    case KeyEvent.KEYCODE_CHANNEL_DOWN: case KeyEvent.KEYCODE_MEDIA_PREVIOUS:
+                        if (!repeat) prevEpisode(); return true;
                     case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE: case KeyEvent.KEYCODE_SPACE:
                         if (isPlaying()) pause(); else start();
                         controls.show(); return true;

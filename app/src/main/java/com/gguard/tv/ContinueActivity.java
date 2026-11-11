@@ -8,10 +8,16 @@ import android.widget.AdapterView;
 import android.widget.GridView;
 import android.widget.TextView;
 
+import com.gguard.tv.Models.ContentType;
+import com.gguard.tv.Models.Episode;
 import com.gguard.tv.Models.StreamItem;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.Callable;
 
 /** The Continue Watching grid: each movie/episode resumes exactly where it stopped. */
 public class ContinueActivity extends BaseActivity {
@@ -57,7 +63,47 @@ public class ContinueActivity extends BaseActivity {
 
     private void play(int pos) {
         if (pos < 0 || pos >= items.size()) return;
-        StreamItem item = items.get(pos).item;
+        final StreamItem item = items.get(pos).item;
+        if (item.seriesId != null && !item.seriesId.isEmpty()) {
+            // Rebuild the season queue so next/previous episode works after resuming.
+            final String sid = item.seriesId;
+            async(new Callable<List<Episode>>() {
+                @Override public List<Episode> call() throws Exception { return Session.episodes(sid); }
+            }, new Done<List<Episode>>() {
+                @Override public void run(List<Episode> eps, Exception error) {
+                    if (error != null || eps == null || eps.isEmpty()) { playSingle(item); return; }
+                    List<Episode> inSeason = new ArrayList<>();
+                    for (Episode e : eps) if (e.season == item.season) inSeason.add(e);
+                    if (inSeason.isEmpty()) inSeason = eps;
+                    Collections.sort(inSeason, new Comparator<Episode>() {
+                        @Override public int compare(Episode a, Episode b) { return Integer.compare(a.episodeNum, b.episodeNum); }
+                    });
+                    List<StreamItem> queue = new ArrayList<>();
+                    int idx = 0;
+                    for (int i = 0; i < inSeason.size(); i++) {
+                        Episode e = inSeason.get(i);
+                        String label = String.format(Locale.ROOT, "S%02dE%02d", e.season, e.episodeNum);
+                        StringBuilder name = new StringBuilder();
+                        if (item.seriesName != null && !item.seriesName.isEmpty()) name.append(item.seriesName).append("  •  ");
+                        name.append(label);
+                        if (e.title != null && !e.title.trim().isEmpty()) name.append("  •  ").append(e.title);
+                        StreamItem si = new StreamItem(e.id, name.toString(), e.image, "", ContentType.MOVIE,
+                                Session.episodeUrl(e), e.extension);
+                        si.seriesId = item.seriesId; si.seriesName = item.seriesName; si.seriesLogo = item.seriesLogo;
+                        si.season = e.season; si.episodeNum = e.episodeNum;
+                        queue.add(si);
+                        if (e.id.equals(item.id)) idx = i;
+                    }
+                    Session.playQueue = queue;
+                    PlayerActivity.start(ContinueActivity.this, idx, false);
+                }
+            });
+        } else {
+            playSingle(item);
+        }
+    }
+
+    private void playSingle(StreamItem item) {
         Session.playQueue = Collections.singletonList(item);
         PlayerActivity.start(this, 0, false);   // the player auto-resumes from ResumeStore
     }

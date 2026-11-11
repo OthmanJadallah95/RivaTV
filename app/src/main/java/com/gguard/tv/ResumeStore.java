@@ -42,7 +42,10 @@ public final class ResumeStore {
 
     private static String key(StreamItem item) {
         Profile p = Session.profile;
-        return (p != null ? p.id : "") + "|" + item.type + "|" + item.id;
+        String pre = (p != null ? p.id : "") + "|";
+        // Series episodes share one key per series → a single Continue Watching entry.
+        if (item.seriesId != null && !item.seriesId.isEmpty()) return pre + "series|" + item.seriesId;
+        return pre + item.type + "|" + item.id;
     }
 
     private static JSONArray load() {
@@ -65,6 +68,8 @@ public final class ResumeStore {
                 o.put("id", item.id); o.put("name", item.name); o.put("logo", item.logo);
                 o.put("cat", item.categoryId); o.put("ctype", item.type.name());
                 o.put("url", item.url); o.put("ext", item.extension);
+                o.put("seriesId", item.seriesId); o.put("seriesName", item.seriesName);
+                o.put("seriesLogo", item.seriesLogo); o.put("season", item.season); o.put("episodeNum", item.episodeNum);
                 o.put("pos", position); o.put("dur", duration); o.put("ts", System.currentTimeMillis());
                 out.put(o);
             } catch (Exception ignored) { }
@@ -82,7 +87,10 @@ public final class ResumeStore {
         JSONArray a = load();
         for (int i = 0; i < a.length(); i++) {
             JSONObject o = a.optJSONObject(i);
-            if (o != null && k.equals(o.optString("key"))) return o.optLong("pos", 0);
+            if (o != null && k.equals(o.optString("key"))) {
+                // Only resume if the saved entry is the same episode/movie.
+                return item.id.equals(o.optString("id")) ? o.optLong("pos", 0) : 0;
+            }
         }
         return 0;
     }
@@ -111,6 +119,8 @@ public final class ResumeStore {
             try { type = ContentType.valueOf(o.optString("ctype")); } catch (Exception e) { type = ContentType.MOVIE; }
             StreamItem item = new StreamItem(o.optString("id"), o.optString("name"),
                     nullable(o, "logo"), o.optString("cat"), type, nullable(o, "url"), nullable(o, "ext"));
+            item.seriesId = nullable(o, "seriesId"); item.seriesName = nullable(o, "seriesName");
+            item.seriesLogo = nullable(o, "seriesLogo"); item.season = o.optInt("season"); item.episodeNum = o.optInt("episodeNum");
             out.add(new Entry(item, o.optLong("pos", 0), o.optLong("dur", 0), o.optLong("ts", 0)));
         }
         return out;

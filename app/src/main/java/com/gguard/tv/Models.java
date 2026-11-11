@@ -44,6 +44,9 @@ public final class Models {
     public static final class StreamItem {
         public final String id, name, logo, categoryId, url, extension;
         public final ContentType type;
+        // Set for series episodes so Continue Watching groups them under one series entry.
+        public String seriesId, seriesName, seriesLogo;
+        public int season, episodeNum;
 
         public StreamItem(String id, String name, String logo, String categoryId, ContentType type,
                           String url, String extension) {

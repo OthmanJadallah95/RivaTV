@@ -47,7 +47,19 @@ public class LoginActivity extends BaseActivity {
             @Override public void onClick(View v) { save(); }
         });
         setMode(true);
+        fillDefaults();
         btnX.requestFocus();
+        // Auto-login on first run with the default subscription.
+        if (getIntent().getBooleanExtra(EXTRA_AUTO, false)) save();
+    }
+
+    static final String EXTRA_AUTO = "auto";
+
+    private void fillDefaults() {
+        if (text(etServer).isEmpty()) etServer.setText("http://Hydraa.st:80");
+        if (text(etUser).isEmpty()) etUser.setText("0795261412");
+        if (text(etPass).isEmpty()) etPass.setText("8426846");
+        if (text(etName).isEmpty()) etName.setText("hedra");
     }
 
     private void setMode(boolean x) {

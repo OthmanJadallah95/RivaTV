@@ -18,7 +18,7 @@
         android:ellipsize="end"
         android:maxLines="2"
         android:textColor="@color/text"
-        android:textSize="17sp" />
+        android:textSize="23sp" />
 
     <TextView
         android:id="@+id/tvCount"

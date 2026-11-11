@@ -45,6 +45,10 @@
     <string name="resize_fill">Stretch</string>
     <string name="resize_zoom">Zoom</string>
     <string name="fav_hint">Long-press OK (or Menu) to add to favorites</string>
+    <string name="replay">↺ Replay</string>
+    <string name="next_ep">Next ⏭</string>
+    <string name="prev_ep">⏮ Previous</string>
+    <string name="last_ep">This is the last episode</string>
     <string name="player_title">Player</string>
     <string name="player_vlc">VLC (recommended)</string>
     <string name="player_system">Android built-in</string>

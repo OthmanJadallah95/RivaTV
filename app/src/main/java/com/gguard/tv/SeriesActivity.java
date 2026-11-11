@@ -3,6 +3,7 @@ package com.gguard.tv;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,6 +11,7 @@ import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.gguard.tv.Models.ContentType;
 import com.gguard.tv.Models.Episode;
@@ -39,6 +41,8 @@ public class SeriesActivity extends BaseActivity {
     private List<Episode> all = Collections.emptyList();
     private List<Episode> current = Collections.emptyList();
     private String seriesName = "";
+    private String seriesId = "", seriesCover = null;
+    private StreamItem seriesItem;
 
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -46,9 +50,12 @@ public class SeriesActivity extends BaseActivity {
         setContentView(R.layout.activity_series);
         final String id = getIntent().getStringExtra(EXTRA_ID);
         if (id == null) { finish(); return; }
+        seriesId = id;
+        seriesCover = getIntent().getStringExtra(EXTRA_COVER);
         seriesName = getIntent().getStringExtra(EXTRA_NAME);
         if (seriesName == null) seriesName = "";
-        ((TextView) findViewById(R.id.tvName)).setText(seriesName);
+        seriesItem = new StreamItem(seriesId, seriesName, seriesCover, "", ContentType.SERIES, null, null);
+        renderName();
         ImageLoader.load((ImageView) findViewById(R.id.ivCover), getIntent().getStringExtra(EXTRA_COVER),
                 (int) (340 * getResources().getDisplayMetrics().density));
 
@@ -117,9 +124,29 @@ public class SeriesActivity extends BaseActivity {
             if (!seriesName.isEmpty()) name.append(seriesName).append("  •  ");
             name.append(label);
             if (!e.title.trim().isEmpty()) name.append("  •  ").append(e.title);
-            queue.add(new StreamItem(e.id, name.toString(), e.image, "", ContentType.MOVIE, Session.episodeUrl(e), e.extension));
+            StreamItem si = new StreamItem(e.id, name.toString(), e.image, "", ContentType.MOVIE, Session.episodeUrl(e), e.extension);
+            si.seriesId = seriesId; si.seriesName = seriesName; si.seriesLogo = seriesCover;
+            si.season = e.season; si.episodeNum = e.episodeNum;
+            queue.add(si);
         }
         Session.playQueue = queue;
         PlayerActivity.start(this, pos, false);
+    }
+
+    private void renderName() {
+        boolean fav = seriesItem != null && Store.isFav(seriesItem);
+        ((TextView) findViewById(R.id.tvName)).setText(seriesName + (fav ? "  ★" : "  ☆"));
+    }
+
+    private void toggleSeriesFav() {
+        if (seriesItem == null) return;
+        boolean added = Store.toggleFav(seriesItem);
+        Toast.makeText(this, added ? R.string.added_fav : R.string.removed_fav, Toast.LENGTH_SHORT).show();
+        renderName();
+    }
+
+    @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_MENU) { toggleSeriesFav(); return true; }
+        return super.onKeyDown(keyCode, event);
     }
 }

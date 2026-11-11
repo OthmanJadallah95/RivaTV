@@ -45,6 +45,10 @@
     <string name="resize_fill">تمديد</string>
     <string name="resize_zoom">تكبير</string>
     <string name="fav_hint">اضغط مطولاً على OK (أو زر القائمة) للإضافة إلى المفضلة</string>
+    <string name="replay">↺ إعادة</string>
+    <string name="next_ep">التالية ⏭</string>
+    <string name="prev_ep">⏮ السابقة</string>
+    <string name="last_ep">هذه آخر حلقة</string>
     <string name="player_title">المشغّل</string>
     <string name="player_vlc">VLC (موصى به)</string>
     <string name="player_system">مشغّل أندرويد المدمج</string>

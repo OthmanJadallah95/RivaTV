@@ -65,7 +65,11 @@ public final class Adapters {
             ((TextView) v.findViewById(R.id.tvName)).setText(item.name);
             TextView num = v.findViewById(R.id.tvNum);
             if (num != null) num.setText(String.valueOf(pos + 1));
-            v.findViewById(R.id.tvFav).setVisibility(Store.isFav(item) ? View.VISIBLE : View.GONE);
+            TextView fav = v.findViewById(R.id.tvFav);
+            boolean isFav = Store.isFav(item);
+            fav.setVisibility(View.VISIBLE);
+            fav.setText(isFav ? "★" : "☆");
+            fav.setAlpha(isFav ? 1f : 0.6f);
             ImageView iv = v.findViewById(poster ? R.id.ivPoster : R.id.ivLogo);
             ImageLoader.load(iv, item.logo, imagePx);
             return v;
